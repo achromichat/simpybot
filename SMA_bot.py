@@ -7,6 +7,8 @@ import json
 import datetime
 import keys
 
+# TESTING GITHUB
+
 # Use current position data in trade decision
 
 # build in the logic to track price movements over time - not just increase, but several increases / trend metric
