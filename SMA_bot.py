@@ -5,10 +5,11 @@ from talib import *
 import time
 import json
 import datetime
+# from .. import keys
 # import keys
 import sys
-sys.path.append(Users/ebay/dev/tradebot)
-from keys import *
+sys.path.append("..")
+import keys
 
 # NEEDS TESTING - Use current position data in trade decision
 
@@ -102,6 +103,7 @@ def balances_debug():
 def price_movement_debug():
     global current_price
     global last_price
+    global trend_counter
     print("Current price: ", current_price)
     print("    Up: ", current_price - last_price)
     print("Trend Counter: ", trend_counter)
@@ -159,8 +161,9 @@ def balance_fetch():
         }),
         'columns': 'currentQty,unrealisedPnl,liquidationPrice,markPrice'
     })
-    open_positions = open_positions_raw[0]['currentQty'], open_positions_raw[0]['markPrice']
-    # Available Funds Indicator
+    if (open_positions_raw != []):
+        open_positions = open_positions_raw[0]['currentQty'], open_positions_raw[0]['unrealisedPnl']
+    # Available Funds Indicator 
     high_avail_funds = free_balance > (.25 * current_balance)
 
 def position_is_long():
@@ -173,6 +176,7 @@ def price_fetch():
     global current_price
     global symbol
     global last_price
+    global trend_counter
 
     current_price = exch.fetch_order_book(symbol, 1)['bids'][0][0] # safeguard: if len (orderbook['bids']) > 0 else None
 
@@ -202,7 +206,7 @@ while True:
 
     ## Check that --- exch.has['fetchOHLCV'] and exch.has['createMarketOrder']:
     print("")
-    print(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+    print(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),"----------------------------------------------")
     
     sma_calculator() # and SMA cross indicator set
     balance_fetch() # and available funds indicator set
@@ -232,7 +236,7 @@ while True:
         #   The above will slowly add to the trend (long) as that trend reaffirms with moving avg and price increases
    
     # Bearish Price Trend
-    elif not sma_bullish and (trend_counter < 1):
+    elif not sma_bullish and (trend_counter < -1):
         print ("BEARISH PULLDOWN")
         if high_avail_funds or position_is_long(): ## lots of avail cash or net long position!
             last_trade_balance = current_balance # order is being placed, so save balance for P/L
