@@ -5,16 +5,20 @@ from talib import *
 import time
 import json
 import datetime
-import keys
+# import keys
+import sys
+sys.path.append(Users/ebay/dev/tradebot)
+from keys import *
 
 # NEEDS TESTING - Use current position data in trade decision
 
-# build in the logic to track price movements over time - not just increase, but several increases / trend metric
-
-# Upload to github - ensure key importing is safe and works first! 
-
+# delete price_increase variable - unnecessary!!
+# Backtest!
+# set stops
+# retool for limit orders
+# HAVE A Way to print P/L of trades when closed out. Would help me compute how successful the bot is. 
+# Also compute an over-time P/L as well as win/loss rate. Remember, winners need to win big, losers small. 
 # Connect and verify OpenVPN connection to CH on Raspberry Pi
-
 # Rewrite this in Go?
 
 exch = ccxt.bitmex({
@@ -36,17 +40,15 @@ long_period = 50
 # ALL TIME P/L
 # will require i/o from a log file? 
 
-# INIT PRICEs
+# INIT Prices
 last_price = exch.fetch_order_book('BTC/USD', 1)['bids'][0][0] # safeguard: if len (orderbook['bids']) > 0 else None
-current_price = 0
+current_price = 0 # will get set later
 
 # INIT Indicators
 sma_bullish = True
-price_increase = True
 high_avail_funds = True
 sma_short_last = 0
 sma_long_last = 0
-## Positions
 
 # INIT Balances and Positions
 starting_balance = exch.fetch_balance()[currency]['total']
@@ -55,9 +57,13 @@ last_trade_balance = 0
 free_balance = 0
 used_balance = 0
 open_positions = []
+# open_positions_raw?
 
 # INIT Order Size
 order_size = 0
+
+# INIT Counters
+trend_counter = 0 # positive when price increasing, negative when decreasing
 
 # Print live P&L when trades get executed
 def trade_debug():
@@ -98,6 +104,7 @@ def price_movement_debug():
     global last_price
     print("Current price: ", current_price)
     print("    Up: ", current_price - last_price)
+    print("Trend Counter: ", trend_counter)
 
 def all_debugs():
     trade_debug()
@@ -157,7 +164,7 @@ def balance_fetch():
     high_avail_funds = free_balance > (.25 * current_balance)
 
 def position_is_long():
-    if open_positions_raw[0]['currentQty']
+    if open_positions_raw[0]['currentQty']:
         return True
     else:
         return False
@@ -165,12 +172,18 @@ def position_is_long():
 def price_fetch():
     global current_price
     global symbol
-    global price_increase
     global last_price
 
     current_price = exch.fetch_order_book(symbol, 1)['bids'][0][0] # safeguard: if len (orderbook['bids']) > 0 else None
-    # Price Increase Indicator
-    price_increase = last_price <= current_price
+
+    # Set Trend Counter
+    if (current_price > last_price):
+        if (trend_counter < 0): trend_counter = 0
+        trend_counter += 1
+    elif (current_price < last_price):
+        if (trend_counter > 0): trend_counter = 0
+        trend_counter -= 1
+
 
 def order_size_calculation():
     global order_size
@@ -193,16 +206,16 @@ while True:
     
     sma_calculator() # and SMA cross indicator set
     balance_fetch() # and available funds indicator set
-    price_fetch() # and price increase indicator set
+    price_fetch() # and trend counter indicator set
 
     order_size_calculation() # calculate order size
 
     all_debugs() # print values
 
     # Bullish Price Trend 
-    if sma_bullish and price_increase:
+    if sma_bullish and (trend_counter > 1):
         print ("BULLISH TO THE MOON")
-        if high_avail_funds or !position_is_long(): ## lots of avail cash or net short position!
+        if high_avail_funds or not position_is_long(): ## lots of avail cash or net short position!
             last_trade_balance = current_balance # order is being placed, so save balance for P/L
             print ("    High funds available. Buy order of ", order_size, " contracts.")
             buy_order = exch.create_market_buy_order (symbol, order_size)
@@ -216,10 +229,10 @@ while True:
 
             trade_debug()
 
-    #   The above will slowly add to the trend (long) as that trend reaffirms with moving avg and price increases
+        #   The above will slowly add to the trend (long) as that trend reaffirms with moving avg and price increases
    
     # Bearish Price Trend
-    elif not sma_bullish and not price_increase:
+    elif not sma_bullish and (trend_counter < 1):
         print ("BEARISH PULLDOWN")
         if high_avail_funds or position_is_long(): ## lots of avail cash or net long position!
             last_trade_balance = current_balance # order is being placed, so save balance for P/L
@@ -242,9 +255,3 @@ while True:
     last_price = current_price
 
     time.sleep(frame_secs)
-
-# HAVE A Way to print P/L of trades when closed out. Would help me compute how successful the bot is. 
-# Also compute an over-time P/L as well as win/loss rate. Remember, winners need to win big, losers small. 
-# Testing trade printing
-# trades = exch.fetchTrades ('BTC/USD', exch.parse8601 ('2018-12-26T02:27:00Z'), 1)
-# print(trades)
