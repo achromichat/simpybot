@@ -1,5 +1,3 @@
-# TESTING!!!
-# TESTING again
 import ccxt
 import numpy
 import talib
@@ -264,3 +262,5 @@ while True:
     last_price = current_price
 
     time.sleep(frame_secs)
+    
+    #Can you see this?
