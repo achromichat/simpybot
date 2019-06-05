@@ -13,13 +13,13 @@ import keys
 
 # NEEDS TESTING - Use current position data in trade decision
 
-# delete price_increase variable - unnecessary!!
-# Backtest!
+
+# Backtest! -- EDIT: this will be quite the rabbit hole, as I'll need to rebuild my strategy in a larger bot framework. Table for now. 
+# put this up on AWS
 # set stops
 # retool for limit orders
 # HAVE A Way to print P/L of trades when closed out. Would help me compute how successful the bot is. 
 # Also compute an over-time P/L as well as win/loss rate. Remember, winners need to win big, losers small. 
-# Connect and verify OpenVPN connection to CH on Raspberry Pi
 # Rewrite this in Go?
 
 exch = ccxt.bitmex({
@@ -124,7 +124,7 @@ def sma_calculator():
     global symbol
     global frame
     
-    candles_time = exch.milliseconds () - (time_multiplier * (long_period - 1)) # pull long_period of candles
+    candles_time = exch.milliseconds() - (time_multiplier * (long_period - 1)) # pull long_period of candles
     candles = exch.fetch_ohlcv(symbol, frame, candles_time) # pull candles back 2x the long period
 ### Need to 2x the candles_time? Check if the SMAs change values with diff candle lookbacks
     opens = []
@@ -187,13 +187,16 @@ def price_fetch():
     elif (current_price < last_price):
         if (trend_counter > 0): trend_counter = 0
         trend_counter -= 1
+   #  elif (current_price = last_price):
+   #    Reset to 0? Or is the trend continuing?
+
 
 
 def order_size_calculation():
     global order_size
     # place orders with 10% of free capital, in Base currency (USD), rounded to nearest integer (contracts)
     order_size = round(free_balance * .1 * current_price)
-    order_size = 1 ## FOR TESTING PURPOSES
+    # order_size = 1 ## FOR TESTING PURPOSES
 
 # Trading loop
 while True:
