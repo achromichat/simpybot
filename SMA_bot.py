@@ -1,3 +1,4 @@
+# TESTING!!!
 import ccxt
 import numpy
 import talib
